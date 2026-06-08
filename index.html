@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#101820">
+  <title>Hangul Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Navegación principal">
+      <div class="brand">
+        <div class="brand-mark hangul">한</div>
+        <div>
+          <h1>Hangul Studio</h1>
+          <p>Aprende a leer coreano con práctica diaria, vocabulario de K-drama y progreso guardado.</p>
+        </div>
+      </div>
+
+      <nav class="nav" data-nav>
+        <a href="#inicio" class="active">Inicio <span>01</span></a>
+        <a href="#flashcards">Flashcards <span>02</span></a>
+        <a href="#quiz">Quiz <span>03</span></a>
+        <a href="#alfabeto">Alfabeto <span>04</span></a>
+        <a href="#vocabulario">Vocabulario <span>05</span></a>
+      </nav>
+
+      <div class="side-actions">
+        <button class="button ghost" type="button" data-theme-toggle>Modo oscuro</button>
+        <button class="button ghost" type="button" data-reset>Reiniciar progreso</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="brand-mini">Hangul Studio</div>
+        <nav class="mobile-nav" data-nav>
+          <a href="#inicio" class="active">Inicio</a>
+          <a href="#flashcards">Flashcards</a>
+          <a href="#quiz">Quiz</a>
+          <a href="#alfabeto">Alfabeto</a>
+          <a href="#vocabulario">Vocab</a>
+        </nav>
+        <button class="button ghost" type="button" data-theme-toggle aria-label="Cambiar tema">◐</button>
+      </div>
+
+      <div class="workspace">
+        <section class="hero" id="inicio">
+          <div class="hero-copy">
+            <div>
+              <p class="eyebrow">Lectura coreana para hispanohablantes</p>
+              <h2>Lee Hangul antes de que termine el capítulo.</h2>
+              <p class="hero-text">Practica letras, sonidos y frases reales. La app recuerda lo que ya dominas y te propone el siguiente paso.</p>
+            </div>
+            <div class="hero-actions">
+              <a class="button primary" href="#flashcards">Practicar ahora</a>
+              <a class="button" href="#alfabeto">Ver alfabeto</a>
+            </div>
+          </div>
+          <div class="glyph-stage" aria-hidden="true">
+            <div class="glyph-cloud hangul">
+              <span>ㄱ</span><span>ㅏ</span><span>ㅁ</span>
+              <span>ㅅ</span><span>ㅓ</span><span>ㅇ</span>
+              <span>ㅎ</span><span>ㅣ</span><span>ㄴ</span>
+            </div>
+            <div class="glyph-focus">
+              <div class="large hangul" data-hero-glyph>사</div>
+              <div class="small">Cada bloque combina consonante y vocal. Ese pequeño sistema abre casi todo lo que ves en pantalla.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="stats" aria-label="Resumen de progreso">
+          <div class="stat">
+            <div class="value" data-stat-known>0</div>
+            <div class="label">Dominadas</div>
+          </div>
+          <div class="stat">
+            <div class="value" data-stat-total>0</div>
+            <div class="label">Tarjetas</div>
+          </div>
+          <div class="stat">
+            <div class="value" data-stat-score>0%</div>
+            <div class="label">Quiz</div>
+          </div>
+          <div class="stat">
+            <div class="value" data-stat-streak>0</div>
+            <div class="label">Racha</div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="plan-title">
+          <div class="section-head">
+            <div>
+              <h3 id="plan-title">Ruta de estudio</h3>
+              <p>Diez minutos al día: reconoce el símbolo, escucha una frase y cierra con un quiz corto.</p>
+            </div>
+          </div>
+          <div class="study-plan">
+            <article class="plan-step">
+              <div class="num">1</div>
+              <h4>Reconoce</h4>
+              <p>Empieza por consonantes y vocales básicas. Marca como dominado solo lo que puedas leer sin mirar la respuesta.</p>
+            </article>
+            <article class="plan-step">
+              <div class="num">2</div>
+              <h4>Combina</h4>
+              <p>Une letras con frases frecuentes: 사랑해, 고마워, 가지마. El contexto ayuda a fijar el sonido.</p>
+            </article>
+            <article class="plan-step">
+              <div class="num">3</div>
+              <h4>Comprueba</h4>
+              <p>Haz el quiz y repite las falladas. El progreso se guarda en este navegador.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="flashcards" aria-labelledby="flash-title">
+          <div class="section-head">
+            <div>
+              <h3 id="flash-title">Flashcards</h3>
+              <p>Voltea la tarjeta, escucha el sonido si tu navegador tiene voz coreana, y marca lo que ya reconoces.</p>
+            </div>
+            <div class="segmented" role="tablist" aria-label="Tipo de tarjetas">
+              <button type="button" class="active" data-deck="letters">Letras</button>
+              <button type="button" data-deck="phrases">Frases</button>
+            </div>
+          </div>
+
+          <div class="flash-layout">
+            <button class="flashcard" type="button" data-flashcard aria-label="Voltear tarjeta">
+              <div>
+                <div class="flash-symbol hangul" data-card-front>ㄱ</div>
+                <p class="flash-label" data-card-mode>Pregunta</p>
+                <div class="flash-answer" data-card-answer>Toca para revelar</div>
+                <p class="flash-example" data-card-example></p>
+              </div>
+            </button>
+
+            <div class="flash-side">
+              <div class="module-panel">
+                <div class="progress-row"><span>Tarjeta</span><strong data-card-count>1 / 1</strong></div>
+                <div class="progress-row"><span>Dominadas</span><strong data-card-known>0</strong></div>
+                <div class="progress-row"><span>Mazo</span><strong data-card-deck>Letras</strong></div>
+              </div>
+              <div class="module-panel deck-list" data-deck-list aria-label="Lista de tarjetas"></div>
+              <div class="actions">
+                <button class="button" type="button" data-prev>Anterior</button>
+                <button class="button" type="button" data-next>Siguiente</button>
+                <button class="button" type="button" data-speak>Escuchar</button>
+                <button class="button primary" type="button" data-known>Domino esta</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="quiz" aria-labelledby="quiz-title">
+          <div class="section-head">
+            <div>
+              <h3 id="quiz-title">Quiz rápido</h3>
+              <p>Elige la romanización correcta. Cada respuesta actualiza tu porcentaje y tu racha.</p>
+            </div>
+            <button class="button" type="button" data-new-quiz>Nuevo set</button>
+          </div>
+
+          <div class="quiz-layout">
+            <div class="quiz-prompt">
+              <div class="quiz-symbol hangul" data-quiz-symbol>ㄱ</div>
+              <div class="quiz-options" data-quiz-options></div>
+              <div class="feedback" data-feedback>Elige una respuesta.</div>
+            </div>
+            <div class="module-panel">
+              <div class="progress-row"><span>Pregunta</span><strong data-quiz-count>1 / 10</strong></div>
+              <div class="progress-row"><span>Aciertos</span><strong data-quiz-right>0</strong></div>
+              <div class="progress-row"><span>Mejor racha</span><strong data-best-streak>0</strong></div>
+              <div class="challenge-list" style="margin-top:14px">
+                <div class="challenge">
+                  <b>Meta de hoy</b>
+                  <p>Completa 10 preguntas y domina 5 tarjetas nuevas.</p>
+                </div>
+                <div class="challenge">
+                  <b>Tip de lectura</b>
+                  <p>La letra ㅇ no suena al inicio de una sílaba, pero al final suena como ng.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section" id="alfabeto" aria-labelledby="alphabet-title">
+          <div class="section-head">
+            <div>
+              <h3 id="alphabet-title">Alfabeto Hangul</h3>
+              <p>Tabla compacta con nombre, romanización y pista de pronunciación.</p>
+            </div>
+          </div>
+          <div class="grid-table" data-alphabet></div>
+        </section>
+
+        <section class="section" id="vocabulario" aria-labelledby="vocab-title">
+          <div class="section-head">
+            <div>
+              <h3 id="vocab-title">Vocabulario de K-drama</h3>
+              <p>Frases informales frecuentes. Úsalas para practicar lectura, no como etiqueta de conversación formal.</p>
+            </div>
+          </div>
+          <div class="vocab-list" data-vocab></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" data-toast role="status" aria-live="polite"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
