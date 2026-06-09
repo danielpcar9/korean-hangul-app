@@ -89,7 +89,7 @@
           </div>
           <div class="stat">
             <div class="value" data-stat-streak>0</div>
-            <div class="label">Racha</div>
+            <div class="label">Días seguidos</div>
           </div>
         </section>
 
@@ -125,19 +125,35 @@
               <h3 id="flash-title">Flashcards</h3>
               <p>Voltea la tarjeta, escucha el sonido si tu navegador tiene voz coreana, y marca lo que ya reconoces.</p>
             </div>
-            <div class="segmented" role="tablist" aria-label="Tipo de tarjetas">
-              <button type="button" class="active" data-deck="letters">Letras</button>
-              <button type="button" data-deck="phrases">Frases</button>
+            <div class="header-actions">
+              <label class="pending-toggle" for="pending-only">
+                <input type="checkbox" id="pending-only" data-pending-toggle>
+                <span>Solo pendientes</span>
+              </label>
+              <div class="segmented" role="tablist" aria-label="Tipo de tarjetas">
+                <button type="button" class="active" data-deck="letters">Letras</button>
+                <button type="button" data-deck="phrases">Frases</button>
+              </div>
             </div>
+          </div>
+
+          <div class="flash-progress-wrap" aria-label="Progreso de flashcards">
+            <div class="progress-track"><span class="progress-fill" data-flash-progress></span></div>
           </div>
 
           <div class="flash-layout">
             <button class="flashcard" type="button" data-flashcard aria-label="Voltear tarjeta">
-              <div>
+              <div class="card-face front">
                 <div class="flash-symbol hangul" data-card-front lang="ko">ㄱ</div>
                 <p class="flash-label" data-card-mode>Pregunta</p>
                 <div class="flash-answer" data-card-answer>Toca para revelar</div>
                 <p class="flash-example" data-card-example></p>
+              </div>
+              <div class="card-face back">
+                <div class="flash-symbol hangul" data-card-front-back lang="ko">ㄱ</div>
+                <p class="flash-label">Respuesta</p>
+                <div class="flash-answer" data-card-answer-back></div>
+                <p class="flash-example" data-card-example-back></p>
               </div>
             </button>
 
@@ -165,6 +181,10 @@
               <p>Elige la romanización correcta. Cada respuesta actualiza tu porcentaje y tu racha.</p>
             </div>
             <button class="button" type="button" data-new-quiz>Nuevo set</button>
+          </div>
+
+          <div class="quiz-progress-wrap" aria-label="Progreso del quiz">
+            <div class="progress-track"><span class="progress-fill" data-quiz-progress></span></div>
           </div>
 
           <div class="quiz-layout">

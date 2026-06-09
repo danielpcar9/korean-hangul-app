@@ -55,6 +55,7 @@ const state = {
   deck: "letters",
   index: 0,
   flipped: false,
+  studyOnlyPending: false,
   quizIndex: 0,
   quizRight: 0,
   quizAnswered: false,
@@ -62,6 +63,9 @@ const state = {
   quizWrong: [],
   progress: loadProgress()
 };
+
+let toastTimer;
+let observerInstance;
 
 const els = {
   html: document.documentElement,
@@ -76,9 +80,12 @@ const els = {
   deckButtons: document.querySelectorAll("[data-deck]"),
   flashcard: document.querySelector("[data-flashcard]"),
   cardFront: document.querySelector("[data-card-front]"),
+  cardFrontBack: document.querySelector("[data-card-front-back]"),
   cardMode: document.querySelector("[data-card-mode]"),
   cardAnswer: document.querySelector("[data-card-answer]"),
+  cardAnswerBack: document.querySelector("[data-card-answer-back]"),
   cardExample: document.querySelector("[data-card-example]"),
+  cardExampleBack: document.querySelector("[data-card-example-back]"),
   cardCount: document.querySelector("[data-card-count]"),
   cardKnown: document.querySelector("[data-card-known]"),
   cardDeck: document.querySelector("[data-card-deck]"),
@@ -92,6 +99,9 @@ const els = {
   feedback: document.querySelector("[data-feedback]"),
   quizCount: document.querySelector("[data-quiz-count]"),
   quizRight: document.querySelector("[data-quiz-right]"),
+  quizProgress: document.querySelector("[data-quiz-progress]"),
+  flashProgress: document.querySelector("[data-flash-progress]"),
+  pendingToggle: document.querySelector("[data-pending-toggle]"),
   bestStreak: document.querySelector("[data-best-streak]"),
   newQuiz: document.querySelector("[data-new-quiz]"),
   alphabet: document.querySelector("[data-alphabet]"),
@@ -107,6 +117,7 @@ function init() {
     els.html.dataset.theme = savedTheme;
   }
 
+  checkDailyStreak();
   renderReference();
   renderVocab();
   renderFlashcard();
@@ -147,9 +158,23 @@ function bindEvents() {
 
   els.prev.addEventListener("click", () => moveCard(-1));
   els.next.addEventListener("click", () => moveCard(1));
-  els.speak.addEventListener("click", () => speak(currentDeck()[state.index].symbol));
+  els.speak.addEventListener("click", () => {
+    const deck = currentDeck();
+    if (!deck.length) return;
+    speak(deck[state.index]?.symbol || "");
+  });
   els.known.addEventListener("click", markKnown);
   els.newQuiz.addEventListener("click", startQuiz);
+
+  if (els.pendingToggle) {
+    els.pendingToggle.addEventListener("change", () => {
+      state.studyOnlyPending = els.pendingToggle.checked;
+      state.index = 0;
+      state.flipped = false;
+      renderFlashcard();
+      startQuiz();
+    });
+  }
 
   document.addEventListener("keydown", (e) => {
     const onButton = document.activeElement?.tagName === "BUTTON";
@@ -166,28 +191,54 @@ function bindEvents() {
 }
 
 function currentDeck() {
-  return state.deck === "letters" ? letters : phrases;
+  const baseDeck = state.deck === "letters" ? letters : phrases;
+  if (!state.studyOnlyPending) return baseDeck;
+  return baseDeck.filter((item) => !state.progress.known.includes(item.id));
 }
 
 function renderFlashcard() {
   const deck = currentDeck();
-  const item = deck[state.index];
-  const known = state.progress.known.includes(item.id);
+  const item = deck[state.index] || currentDeck()[0];
+  const known = item ? state.progress.known.includes(item.id) : false;
   els.deckButtons.forEach((button) => button.classList.toggle("active", button.dataset.deck === state.deck));
   els.flashcard.classList.toggle("flipped", state.flipped);
+
+  if (!item) {
+    els.cardFront.textContent = "";
+    els.cardFrontBack.textContent = "";
+    els.cardMode.textContent = "Mazo completo";
+    els.cardAnswer.textContent = "¡Mazo completo! Toca Repasar de nuevo en alguna tarjeta.";
+    els.cardAnswerBack.textContent = "¡Mazo completo! Toca Repasar de nuevo en alguna tarjeta.";
+    els.cardExample.textContent = "";
+    els.cardExampleBack.textContent = "";
+    els.cardCount.textContent = "0 / 0";
+    els.cardKnown.textContent = countKnown(currentDeck());
+    els.cardDeck.textContent = state.deck === "letters" ? "Letras" : "Frases";
+    els.known.textContent = "Repasar de nuevo";
+    els.known.disabled = true;
+    renderDeckList();
+    updateStats();
+    updateProgressBars();
+    return;
+  }
+
   els.cardFront.textContent = item.symbol;
+  els.cardFrontBack.textContent = item.symbol;
   els.cardMode.textContent = state.flipped ? "Respuesta" : "Pregunta";
   els.cardAnswer.textContent = state.flipped ? `${item.roman} · ${item.sound}` : "Toca para revelar";
+  els.cardAnswerBack.textContent = `${item.roman} · ${item.sound}`;
   els.cardExample.innerHTML = state.flipped
     ? `Ejemplo: <span class="hangul" lang="ko">${item.example}</span>`
     : "Intenta decirlo antes de mirar.";
-  els.cardCount.textContent = `${state.index + 1} / ${deck.length}`;
-  els.cardKnown.textContent = countKnown(deck);
+  els.cardExampleBack.innerHTML = `Ejemplo: <span class="hangul" lang="ko">${item.example}</span>`;
+  els.cardCount.textContent = `${Math.min(state.index + 1, deck.length)} / ${deck.length}`;
+  els.cardKnown.textContent = countKnown(currentDeck());
   els.cardDeck.textContent = state.deck === "letters" ? "Letras" : "Frases";
   els.known.textContent = known ? "Repasar de nuevo" : "Domino esta";
   els.known.disabled = false;
   renderDeckList();
   updateStats();
+  updateProgressBars();
 }
 
 function renderDeckList() {
@@ -214,7 +265,21 @@ function renderDeckList() {
 
 function moveCard(direction) {
   const deck = currentDeck();
-  state.index = (state.index + direction + deck.length) % deck.length;
+  if (!deck.length) {
+    state.flipped = false;
+    renderFlashcard();
+    return;
+  }
+
+  let nextIndex = state.index;
+  for (let step = 0; step < deck.length; step += 1) {
+    nextIndex = (nextIndex + direction + deck.length) % deck.length;
+    if (!state.studyOnlyPending || !state.progress.known.includes(deck[nextIndex].id)) {
+      break;
+    }
+  }
+
+  state.index = nextIndex;
   state.flipped = false;
   renderFlashcard();
 }
@@ -229,14 +294,30 @@ function markKnown() {
     state.progress.known.splice(idx, 1);
     showToast(`${item.symbol} quitado de dominadas.`);
   }
-  state.progress.lastStudyDate = todayKey();
+  recordDailyStudy();
   saveProgress();
   renderFlashcard();
 }
 
 function startQuiz() {
   const deck = currentDeck();
-  state.quizSet = shuffle([...deck]).slice(0, Math.min(10, deck.length));
+  const intervals = state.progress.intervals || {};
+
+  Object.keys(intervals).forEach((id) => {
+    if (intervals[id] > 0) intervals[id] -= 1;
+  });
+
+  const available = deck.filter((item) => (intervals[item.id] || 0) === 0);
+  const postponed = deck.filter((item) => (intervals[item.id] || 0) > 0)
+    .sort((a, b) => (intervals[a.id] || 0) - (intervals[b.id] || 0));
+  const pool = [...available];
+
+  while (pool.length < 10 && postponed.length) {
+    const next = postponed.shift();
+    if (next && !pool.includes(next)) pool.push(next);
+  }
+
+  state.quizSet = shuffle(pool).slice(0, Math.min(10, pool.length));
   state.quizIndex = 0;
   state.quizRight = 0;
   state.quizWrong = [];
@@ -262,6 +343,7 @@ function renderQuiz() {
   els.quizCount.textContent = `${state.quizIndex + 1} / ${state.quizSet.length}`;
   els.quizRight.textContent = state.quizRight;
   state.quizAnswered = false;
+  updateProgressBars();
 
   els.quizOptions.querySelectorAll("[data-answer]").forEach((button) => {
     button.addEventListener("click", () => answerQuiz(button, item));
@@ -285,18 +367,23 @@ function answerQuiz(button, item) {
     state.quizRight += 1;
     state.progress.currentStreak += 1;
     state.progress.bestStreak = Math.max(state.progress.bestStreak, state.progress.currentStreak);
+    state.progress.intervals = state.progress.intervals || {};
+    state.progress.intervals[item.id] = 2;
     els.feedback.textContent = `Correcto: ${item.symbol} suena ${item.roman}.`;
   } else {
     state.progress.currentStreak = 0;
+    state.progress.intervals = state.progress.intervals || {};
+    state.progress.intervals[item.id] = 0;
     state.quizWrong.push(item);
     els.feedback.textContent = `Era ${item.roman}. Pista: ${item.sound}.`;
   }
 
   state.progress.quizTotal += 1;
   state.progress.quizRight += correct ? 1 : 0;
-  state.progress.lastStudyDate = todayKey();
+  recordDailyStudy();
   saveProgress();
   updateStats();
+  updateProgressBars();
 
   window.setTimeout(() => {
     if (state.quizIndex < state.quizSet.length - 1) {
@@ -350,8 +437,18 @@ function updateStats() {
   els.statKnown.textContent = state.progress.known.length;
   els.statTotal.textContent = total;
   els.statScore.textContent = `${percent}%`;
-  els.statStreak.textContent = state.progress.currentStreak;
+  els.statStreak.textContent = state.progress.dailyStreak || 0;
   els.bestStreak.textContent = state.progress.bestStreak;
+  updateProgressBars();
+}
+
+function updateProgressBars() {
+  const flashDeck = currentDeck();
+  const flashPercent = flashDeck.length ? Math.round((countKnown(flashDeck) / flashDeck.length) * 100) : 0;
+  const quizPercent = state.progress.quizTotal ? Math.round((state.progress.quizRight / state.progress.quizTotal) * 100) : 0;
+
+  if (els.flashProgress) els.flashProgress.style.width = `${flashPercent}%`;
+  if (els.quizProgress) els.quizProgress.style.width = `${quizPercent}%`;
 }
 
 function countKnown(deck) {
@@ -369,17 +466,43 @@ function speak(text) {
     showToast("Este navegador no tiene lectura por voz.");
     return;
   }
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "ko-KR";
-  utterance.rate = 0.82;
-  window.speechSynthesis.speak(utterance);
+
+  const speakWithVoice = (voice) => {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = voice.lang || "ko-KR";
+    utterance.voice = voice;
+    utterance.rate = 0.82;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const preferredVoice = window.speechSynthesis.getVoices().find((voice) => voice.lang === "ko-KR" || voice.lang.startsWith("ko"));
+  if (preferredVoice) {
+    speakWithVoice(preferredVoice);
+    return;
+  }
+
+  const handleVoicesChanged = () => {
+    const readyVoice = window.speechSynthesis.getVoices().find((voice) => voice.lang === "ko-KR" || voice.lang.startsWith("ko"));
+    if (readyVoice) {
+      window.speechSynthesis.onvoiceschanged = null;
+      speakWithVoice(readyVoice);
+      return;
+    }
+    showToast("No hay voz coreana disponible en este navegador.");
+    window.speechSynthesis.onvoiceschanged = null;
+  };
+
+  window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+  if (window.speechSynthesis.getVoices().length) {
+    handleVoicesChanged();
+  }
 }
 
 function observeSections() {
   const sections = document.querySelectorAll("main section[id]");
   const links = document.querySelectorAll("[data-nav] a");
-  const observer = new IntersectionObserver((entries) => {
+  observerInstance = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (!entry.isIntersecting) return;
       links.forEach((link) => {
@@ -387,7 +510,11 @@ function observeSections() {
       });
     });
   }, { rootMargin: "-42% 0px -52% 0px", threshold: 0 });
-  sections.forEach((section) => observer.observe(section));
+  sections.forEach((section) => observerInstance.observe(section));
+}
+
+function disconnectObserver() {
+  observerInstance?.disconnect();
 }
 
 function rotateHeroGlyph() {
@@ -414,8 +541,31 @@ function defaultProgress() {
     quizTotal: 0,
     currentStreak: 0,
     bestStreak: 0,
+    dailyStreak: 0,
+    intervals: {},
     lastStudyDate: ""
   };
+}
+
+function checkDailyStreak() {
+  const last = state.progress.lastStudyDate;
+  if (!last) return;
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
+  if (last !== todayKey() && last !== yesterdayStr) {
+    state.progress.dailyStreak = 0;
+    saveProgress();
+  }
+}
+
+function recordDailyStudy() {
+  if (state.progress.lastStudyDate !== todayKey()) {
+    state.progress.dailyStreak = (state.progress.dailyStreak || 0) + 1;
+    state.progress.lastStudyDate = todayKey();
+  }
 }
 
 function saveProgress() {
@@ -436,6 +586,6 @@ function shuffle(items) {
 function showToast(message) {
   els.toast.textContent = message;
   els.toast.classList.add("show");
-  window.clearTimeout(showToast.timer);
-  showToast.timer = window.setTimeout(() => els.toast.classList.remove("show"), 1800);
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => els.toast.classList.remove("show"), 1800);
 }
