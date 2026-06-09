@@ -14,7 +14,7 @@ const letters = [
   { id: "p", symbol: "ㅍ", name: "피읖", roman: "p", sound: "p fuerte", example: "파" },
   { id: "h", symbol: "ㅎ", name: "히읗", roman: "h", sound: "h suave", example: "해, 하" },
   { id: "kk", symbol: "ㄲ", name: "쌍기역", roman: "kk", sound: "k tensa", example: "꼭" },
-  { id: "tt", symbol: "ㄸ", name: "쌍디귿", roman: "tt", sound: "t tensa", example: "따ra" }, // wait, line 1143 was example: "따라"
+  { id: "tt", symbol: "ㄸ", name: "쌍디귿", roman: "tt", sound: "t tensa", example: "따라" }, // wait, line 1143 was example: "따라"
   { id: "pp", symbol: "ㅃ", name: "쌍비읍", roman: "pp", sound: "p tensa", example: "오빠" },
   { id: "ss", symbol: "ㅆ", name: "쌍시옷", roman: "ss", sound: "s tensa", example: "있어" },
   { id: "jj", symbol: "ㅉ", name: "쌍지읒", roman: "jj", sound: "j tensa", example: "진짜" },
@@ -59,6 +59,7 @@ const state = {
   quizRight: 0,
   quizAnswered: false,
   quizSet: [],
+  quizWrong: [],
   progress: loadProgress()
 };
 
@@ -149,6 +150,19 @@ function bindEvents() {
   els.speak.addEventListener("click", () => speak(currentDeck()[state.index].symbol));
   els.known.addEventListener("click", markKnown);
   els.newQuiz.addEventListener("click", startQuiz);
+
+  document.addEventListener("keydown", (e) => {
+    const onButton = document.activeElement?.tagName === "BUTTON";
+
+    if (e.key === "ArrowLeft")  { e.preventDefault(); moveCard(-1); return; }
+    if (e.key === "ArrowRight") { e.preventDefault(); moveCard(1);  return; }
+
+    if (!onButton && (e.key === " " || e.key === "Enter")) {
+      e.preventDefault();
+      state.flipped = !state.flipped;
+      renderFlashcard();
+    }
+  });
 }
 
 function currentDeck() {
@@ -164,12 +178,14 @@ function renderFlashcard() {
   els.cardFront.textContent = item.symbol;
   els.cardMode.textContent = state.flipped ? "Respuesta" : "Pregunta";
   els.cardAnswer.textContent = state.flipped ? `${item.roman} · ${item.sound}` : "Toca para revelar";
-  els.cardExample.innerHTML = state.flipped ? `Ejemplo: <span class="hangul">${item.example}</span>` : "Intenta decirlo antes de mirar.";
+  els.cardExample.innerHTML = state.flipped
+    ? `Ejemplo: <span class="hangul" lang="ko">${item.example}</span>`
+    : "Intenta decirlo antes de mirar.";
   els.cardCount.textContent = `${state.index + 1} / ${deck.length}`;
   els.cardKnown.textContent = countKnown(deck);
   els.cardDeck.textContent = state.deck === "letters" ? "Letras" : "Frases";
-  els.known.textContent = known ? "Ya dominada" : "Domino esta";
-  els.known.disabled = known;
+  els.known.textContent = known ? "Repasar de nuevo" : "Domino esta";
+  els.known.disabled = false;
   renderDeckList();
   updateStats();
 }
@@ -180,7 +196,7 @@ function renderDeckList() {
     const known = state.progress.known.includes(item.id);
     return `
       <button class="deck-item ${index === state.index ? "active" : ""}" type="button" data-jump="${index}">
-        <span class="mini hangul">${item.symbol}</span>
+        <span class="mini hangul" lang="ko">${item.symbol}</span>
         <span class="name">${item.roman}</span>
         <span class="check">${known ? "✓" : ""}</span>
       </button>
@@ -205,32 +221,43 @@ function moveCard(direction) {
 
 function markKnown() {
   const item = currentDeck()[state.index];
-  if (!state.progress.known.includes(item.id)) {
+  const idx = state.progress.known.indexOf(item.id);
+  if (idx === -1) {
     state.progress.known.push(item.id);
-    state.progress.lastStudyDate = todayKey();
-    saveProgress();
     showToast(`${item.symbol} marcado como dominado.`);
+  } else {
+    state.progress.known.splice(idx, 1);
+    showToast(`${item.symbol} quitado de dominadas.`);
   }
+  state.progress.lastStudyDate = todayKey();
+  saveProgress();
   renderFlashcard();
 }
 
 function startQuiz() {
-  state.quizSet = shuffle([...letters]).slice(0, 10);
+  const deck = currentDeck();
+  state.quizSet = shuffle([...deck]).slice(0, Math.min(10, deck.length));
   state.quizIndex = 0;
   state.quizRight = 0;
+  state.quizWrong = [];
   state.quizAnswered = false;
   renderQuiz();
 }
 
 function renderQuiz() {
+  const deck = currentDeck();
   const item = state.quizSet[state.quizIndex];
   const options = shuffle([
     item.roman,
-    ...shuffle(letters.filter((letter) => letter.id !== item.id)).slice(0, 3).map((letter) => letter.roman)
+    ...shuffle(deck.filter((card) => card.id !== item.id))
+      .slice(0, 3)
+      .map((card) => card.roman)
   ]);
 
   els.quizSymbol.textContent = item.symbol;
-  els.quizOptions.innerHTML = options.map((option) => `<button class="option" type="button" data-answer="${option}">${option}</button>`).join("");
+  els.quizOptions.innerHTML = options
+    .map((option) => `<button class="option" type="button" data-answer="${option}">${option}</button>`)
+    .join("");
   els.feedback.textContent = "Elige una respuesta.";
   els.quizCount.textContent = `${state.quizIndex + 1} / ${state.quizSet.length}`;
   els.quizRight.textContent = state.quizRight;
@@ -261,6 +288,7 @@ function answerQuiz(button, item) {
     els.feedback.textContent = `Correcto: ${item.symbol} suena ${item.roman}.`;
   } else {
     state.progress.currentStreak = 0;
+    state.quizWrong.push(item);
     els.feedback.textContent = `Era ${item.roman}. Pista: ${item.sound}.`;
   }
 
@@ -275,7 +303,14 @@ function answerQuiz(button, item) {
       state.quizIndex += 1;
       renderQuiz();
     } else {
-      els.feedback.textContent = `Set terminado: ${state.quizRight} de ${state.quizSet.length}.`;
+      if (state.quizWrong.length === 0) {
+        els.feedback.innerHTML = `¡Set perfecto! ${state.quizRight} de ${state.quizSet.length}.`;
+      } else {
+        const list = state.quizWrong
+          .map((i) => `<span class="missed-item"><span class="hangul">${i.symbol}</span> → ${i.roman}</span>`)
+          .join("");
+        els.feedback.innerHTML = `${state.quizRight} de ${state.quizSet.length}. Repasa: ${list}`;
+      }
     }
   }, 950);
 }
@@ -283,10 +318,10 @@ function answerQuiz(button, item) {
 function renderReference() {
   els.alphabet.innerHTML = letters.map((item) => `
     <article class="tile">
-      <div class="glyph hangul">${item.symbol}</div>
+      <div class="glyph hangul" lang="ko">${item.symbol}</div>
       <div>
-        <b><span class="hangul">${item.name}</span> · ${item.roman}</b>
-        <span>${item.sound}. Ejemplo: <span class="hangul">${item.example}</span></span>
+        <b><span class="hangul" lang="ko">${item.name}</span> · ${item.roman}</b>
+        <span>${item.sound}. Ejemplo: <span class="hangul" lang="ko">${item.example}</span></span>
       </div>
     </article>
   `).join("");
@@ -295,12 +330,12 @@ function renderReference() {
 function renderVocab() {
   els.vocab.innerHTML = phrases.map((item) => `
     <article class="phrase">
-      <div class="kr hangul">${item.symbol}</div>
+      <div class="kr hangul" lang="ko">${item.symbol}</div>
       <div class="meta">
         <div class="rom">${item.roman}</div>
         <div class="mean">${item.sound}</div>
       </div>
-      <button class="speak" type="button" aria-label="Escuchar ${item.symbol}" data-say="${item.symbol}">▶</button>
+      <button class="speak" type="button" aria-label="Escuchar ${item.roman}" data-say="${item.symbol}">▶</button>
     </article>
   `).join("");
 

@@ -524,10 +524,6 @@ button {
   gap: 10px;
 }
 
-.actions .wide {
-  grid-column: 1 / -1;
-}
-
 .quiz-layout {
   display: grid;
   grid-template-columns: 1fr 320px;
@@ -904,3 +900,17 @@ button {
     min-height: 320px;
   }
 }
+
+.missed-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  margin: 2px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--accent-soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
