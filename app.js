@@ -14,7 +14,7 @@ const letters = [
   { id: "p", symbol: "ㅍ", name: "피읖", roman: "p", sound: "p fuerte", example: "파" },
   { id: "h", symbol: "ㅎ", name: "히읗", roman: "h", sound: "h suave", example: "해, 하" },
   { id: "kk", symbol: "ㄲ", name: "쌍기역", roman: "kk", sound: "k tensa", example: "꼭" },
-  { id: "tt", symbol: "ㄸ", name: "쌍디귿", roman: "tt", sound: "t tensa", example: "따라" }, // wait, line 1143 was example: "따라"
+  { id: "tt", symbol: "ㄸ", name: "쌍디귿", roman: "tt", sound: "t tensa", example: "따라" },
   { id: "pp", symbol: "ㅃ", name: "쌍비읍", roman: "pp", sound: "p tensa", example: "오빠" },
   { id: "ss", symbol: "ㅆ", name: "쌍시옷", roman: "ss", sound: "s tensa", example: "있어" },
   { id: "jj", symbol: "ㅉ", name: "쌍지읒", roman: "jj", sound: "j tensa", example: "진짜" },
@@ -306,6 +306,7 @@ function startQuiz() {
   Object.keys(intervals).forEach((id) => {
     if (intervals[id] > 0) intervals[id] -= 1;
   });
+  saveProgress();
 
   const available = deck.filter((item) => (intervals[item.id] || 0) === 0);
   const postponed = deck.filter((item) => (intervals[item.id] || 0) > 0)

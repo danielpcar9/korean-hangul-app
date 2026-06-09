@@ -451,7 +451,6 @@ button {
   place-items: center;
   text-align: center;
   padding: 0;
-  perspective: 1200px;
   transform-style: preserve-3d;
   transition: transform 220ms ease, background 220ms ease;
 }
@@ -474,7 +473,7 @@ button {
 }
 
 .flashcard.flipped {
-  transform: rotateY(180deg);
+  transform: perspective(1200px) rotateY(180deg);
 }
 
 .flashcard.flipped .card-face.front {
